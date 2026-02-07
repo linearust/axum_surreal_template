@@ -1,12 +1,12 @@
-use axum::{Extension, Form, extract::{Query, State}, response::{IntoResponse, Redirect}};
+use axum::{Form, extract::{Query, State}, response::{IntoResponse, Redirect}};
 use serde::Deserialize;
 use tower_sessions::Session;
 
 use crate::{
-    auth::CurrentUser,
+    auth::AuthenticatedUser,
     config::AppConfig,
-    constants::{errors, messages},
-    data::{commands, errors::DataError, queries},
+    constants::messages,
+    data::{commands, queries},
     session::FlashMessage,
     handlers::errors::HandlerResult,
     models::{OrderId, OrderNumber, order::PaymentStatus},
@@ -20,14 +20,11 @@ pub struct PaymentInitiateForm {
 }
 
 pub async fn post_actions_payment_initiate(
-    Extension(current_user): Extension<CurrentUser>,
+    user: AuthenticatedUser,
     session: Session,
     Form(form): Form<PaymentInitiateForm>,
 ) -> HandlerResult {
-    let user_id = current_user.require_authenticated()
-        .ok_or(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED))?;
-
-    let order = queries::order::get_order_for_user(&form.order_id, user_id).await?;
+    let order = queries::order::get_order_for_user(&form.order_id, &user.user_id).await?;
 
     if !matches!(order.payment_status, PaymentStatus::Pending) {
         return Ok(FlashMessage::error(messages::ORDER_ALREADY_PROCESSED)
@@ -56,13 +53,11 @@ async fn redirect_with_error(session: &Session, order_id: &OrderId) -> HandlerRe
 
 pub async fn get_actions_payment_verify(
     State(config): State<AppConfig>,
-    Extension(current_user): Extension<CurrentUser>,
+    user: AuthenticatedUser,
     session: Session,
     Query(query): Query<PaymentVerifyQuery>,
 ) -> HandlerResult {
-    let user_id = current_user.require_authenticated()
-        .ok_or(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED))?;
-    let order = queries::order::get_order_by_order_number_for_user(&query.order_number, user_id).await?;
+    let order = queries::order::get_order_by_order_number_for_user(&query.order_number, &user.user_id).await?;
 
     if query.amount != order.price_amount {
         tracing::error!("Payment amount mismatch: expected {}, got {}", order.price_amount, query.amount);

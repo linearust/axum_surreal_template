@@ -1,10 +1,10 @@
-use axum::{Extension, extract::Path};
+use axum::extract::Path;
 use tower_sessions::Session;
 
 use crate::{
-    auth::CurrentUser,
-    constants::{errors, messages},
-    data::{commands::admin, errors::DataError},
+    auth::AuthenticatedUser,
+    constants::messages,
+    data::commands::admin,
     session::FlashMessage,
     handlers::errors::HandlerResult,
     models::UserId,
@@ -13,15 +13,12 @@ use crate::{
 
 pub async fn delete_actions_admin_users_user_id_revoke_role(
     Path(raw_user_id): Path<String>,
-    Extension(current_user): Extension<CurrentUser>,
+    user: AuthenticatedUser,
     session: Session,
 ) -> HandlerResult {
-    let admin_user_id = current_user.require_authenticated()
-        .ok_or(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED))?;
-    let user_id = UserId::parse(&raw_user_id)
-        .ok_or_else(|| DataError::InvalidInput("Invalid user ID".to_string()))?;
+    let user_id = UserId::parse_or_invalid(&raw_user_id)?;
 
-    admin::revoke_admin_role(&user_id, admin_user_id).await?;
+    admin::revoke_admin_role(&user_id, &user.user_id).await?;
 
     Ok(FlashMessage::success(messages::ADMIN_ROLE_REVOKED)
         .set_and_redirect(&session, &helpers::user_detail_path(&user_id))

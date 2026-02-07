@@ -4,7 +4,7 @@ use axum::{
     http::request::Parts,
 };
 
-use crate::{auth::CurrentUser, config::AppConfig, session::FlashMessage};
+use crate::{auth::CurrentUser, config::AppConfig, models::UserId, session::FlashMessage};
 
 pub struct PageContext {
     pub config: AppConfig,
@@ -19,6 +19,14 @@ impl PageContext {
 
     pub fn flash_ref(&self) -> Option<&FlashMessage> {
         self.flash.as_ref()
+    }
+
+    /// Panics on Guest — only call in protected routes.
+    pub fn user_id(&self) -> &UserId {
+        match &self.current_user {
+            CurrentUser::Authenticated { user_id, .. } => user_id,
+            CurrentUser::Guest => panic!("user_id() called in unprotected route — add to protected_routes()"),
+        }
     }
 }
 

@@ -19,7 +19,7 @@ pub async fn get_user_info(user_id: &UserId) -> Result<Option<UserInfo>, DataErr
         .query(format!(
             "SELECT email, {IS_ADMIN_SUBQUERY} FROM user WHERE id = $user_id",
         ))
-        .bind(("user_id", user_id.clone().into_record_id()))
+        .bind(("user_id", user_id.clone()))
         .bind(("role", Role::Admin.as_str()))
         .await?;
 

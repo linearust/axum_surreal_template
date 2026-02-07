@@ -53,7 +53,6 @@ pub mod errors {
     pub const CANNOT_REVOKE_OWN_ADMIN: &str = "Cannot revoke your own admin role";
     pub const USER_CREATION_FAILED: &str = "Failed to create user";
     pub const ORDER_CREATION_FAILED: &str = "Failed to create order";
-    pub const AUTHENTICATION_REQUIRED: &str = "Authentication required";
 }
 
 pub mod pricing {

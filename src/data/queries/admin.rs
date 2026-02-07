@@ -81,7 +81,7 @@ pub async fn get_user_detail(user_id: &UserId) -> Result<UserListItem, DataError
             "SELECT id, email, created_at, {IS_ADMIN_SUBQUERY}, {ORDER_COUNT_SUBQUERY}, {TOTAL_SPENT_SUBQUERY}
             FROM user WHERE id = $user_id",
         ))
-        .bind(("user_id", user_id.clone().into_record_id()))
+        .bind(("user_id", user_id.clone()))
         .bind(("role", Role::Admin.as_str()))
         .bind(("paid", PaymentStatus::Paid.as_str()))
         .await?;
@@ -112,7 +112,7 @@ pub async fn get_user_orders_paginated(
             SELECT count() as count FROM order WHERE user = $user GROUP ALL;
             "#,
         )
-        .bind(("user", user_id.clone().into_record_id()))
+        .bind(("user", user_id.clone()))
         .bind(("limit", per_page))
         .bind(("offset", offset))
         .await?;
@@ -179,7 +179,7 @@ pub async fn get_order_detail(order_id: &OrderId) -> Result<OrderDetail, DataErr
              FROM order
              WHERE id = $order_id",
         )
-        .bind(("order_id", order_id.clone().into_record_id()))
+        .bind(("order_id", order_id.clone()))
         .await?;
 
     let order: Option<OrderDetail> = result.take(0)?;

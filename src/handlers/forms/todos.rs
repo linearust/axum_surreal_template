@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-use axum::{Extension, Form, extract::State, http::StatusCode, response::IntoResponse};
+use axum::{Form, extract::State, http::StatusCode, response::IntoResponse};
 use tower_sessions::Session;
 use validator::Validate;
 
 use crate::{
-    auth::CurrentUser,
+    auth::AuthenticatedUser,
     config::AppConfig,
-    constants::{errors, messages},
-    data::{commands, errors::DataError, queries},
+    constants::messages,
+    data::{commands, queries},
     session::FlashMessage,
     handlers::errors::HandlerResult,
     models::{todo::{CreateTodoForm, FIELD_TASK}, UserId},
@@ -20,26 +20,24 @@ use super::parse_validation_errors;
 
 pub async fn post_forms_todos(
     State(config): State<AppConfig>,
-    Extension(current_user): Extension<CurrentUser>,
+    user: AuthenticatedUser,
     session: Session,
     Form(form): Form<CreateTodoForm>,
 ) -> HandlerResult {
-    let user_id = current_user.require_authenticated()
-        .ok_or(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED))?;
-
     if let Err(validation_errors) = form.validate() {
         let errors = parse_validation_errors(&validation_errors);
-        return render_validation_errors(&current_user, config.site_name(), user_id, &form, errors).await;
+        let current_user = user.as_current_user();
+        return render_validation_errors(&current_user, config.site_name(), &user.user_id, &form, errors).await;
     }
 
-    commands::todo::create_todo(user_id, form.task.trim()).await?;
+    commands::todo::create_todo(&user.user_id, form.task.trim()).await?;
     Ok(FlashMessage::success(messages::TODO_CREATED)
         .set_and_redirect(&session, pages::TODOS)
         .await?)
 }
 
 async fn render_validation_errors(
-    current_user: &CurrentUser,
+    current_user: &crate::auth::CurrentUser,
     site_name: &str,
     user_id: &UserId,
     form: &CreateTodoForm,

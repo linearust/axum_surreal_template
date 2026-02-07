@@ -1,37 +1,30 @@
-use axum::{Extension, extract::Path};
+use axum::extract::Path;
 
 use crate::{
-    auth::CurrentUser,
-    constants::errors,
-    data::{commands, errors::DataError},
+    auth::AuthenticatedUser,
+    data::commands,
     handlers::errors::HandlerResult,
     models::TodoId,
     views::{pages, response as htmx},
 };
 
 pub async fn delete_actions_todos_todo_id(
-    Extension(current_user): Extension<CurrentUser>,
+    user: AuthenticatedUser,
     Path(raw_todo_id): Path<String>,
 ) -> HandlerResult {
-    let user_id = current_user.require_authenticated()
-        .ok_or(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED))?;
-    let todo_id = TodoId::parse(&raw_todo_id)
-        .ok_or_else(|| DataError::InvalidInput("Invalid todo ID".to_string()))?;
+    let todo_id = TodoId::parse_or_invalid(&raw_todo_id)?;
 
-    commands::todo::delete_todo(user_id, &todo_id).await?;
+    commands::todo::delete_todo(&user.user_id, &todo_id).await?;
 
     Ok(htmx::empty_ok_response())
 }
 
 pub async fn patch_actions_todos_todo_id_toggle(
-    Extension(current_user): Extension<CurrentUser>,
+    user: AuthenticatedUser,
     Path(raw_todo_id): Path<String>,
 ) -> HandlerResult {
-    let user_id = current_user.require_authenticated()
-        .ok_or(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED))?;
-    let todo_id = TodoId::parse(&raw_todo_id)
-        .ok_or_else(|| DataError::InvalidInput("Invalid todo ID".to_string()))?;
+    let todo_id = TodoId::parse_or_invalid(&raw_todo_id)?;
 
-    let todo = commands::todo::toggle_todo_completion(user_id, &todo_id).await?;
+    let todo = commands::todo::toggle_todo_completion(&user.user_id, &todo_id).await?;
     Ok(htmx::html_fragment(pages::todo_item(&todo)))
 }

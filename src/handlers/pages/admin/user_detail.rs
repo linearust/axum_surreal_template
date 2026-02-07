@@ -3,7 +3,7 @@ use maud::Markup;
 
 use crate::{
     constants::admin::ITEMS_PER_PAGE,
-    data::{errors::DataError, queries::admin},
+    data::queries::admin,
     handlers::{context::PageContext, errors::HandlerError},
     models::{pagination::PaginationQuery, UserId},
     views::pages::admin as admin_views,
@@ -15,8 +15,7 @@ pub async fn get_admin_user_detail(
     Query(query): Query<PaginationQuery>,
 ) -> Result<Markup, HandlerError> {
     let page = query.page.max(1);
-    let user_id = UserId::parse(&raw_user_id)
-        .ok_or_else(|| DataError::InvalidInput("Invalid user ID".to_string()))?;
+    let user_id = UserId::parse_or_invalid(&raw_user_id)?;
 
     let user = admin::get_user_detail(&user_id).await?;
     let paginated_orders = admin::get_user_orders_paginated(&user_id, page, ITEMS_PER_PAGE).await?;

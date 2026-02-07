@@ -32,7 +32,7 @@ pub async fn get_orders_for_user(user_id: &UserId, limit: i64) -> Result<Vec<Ord
              ORDER BY created_at DESC
              LIMIT $limit",
         )
-        .bind(("user", user_id.clone().into_record_id()))
+        .bind(("user", user_id.clone()))
         .bind(("limit", limit))
         .await?;
 

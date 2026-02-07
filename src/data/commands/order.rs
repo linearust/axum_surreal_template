@@ -25,7 +25,7 @@ pub struct CreateOrderParams {
 
 #[derive(Serialize)]
 struct OrderData {
-    user: surrealdb::RecordId,
+    user: UserId,
     user_email: String,
     filename: String,
     file_size: i32,
@@ -40,7 +40,7 @@ pub async fn create_order(params: CreateOrderParams) -> Result<Order, DataError>
     let order: Option<Order> = DB
         .create("order")
         .content(OrderData {
-            user: params.user_id.into_record_id(),
+            user: params.user_id,
             user_email: params.user_email,
             filename: params.filename,
             file_size: params.file_size,
@@ -52,7 +52,7 @@ pub async fn create_order(params: CreateOrderParams) -> Result<Order, DataError>
         })
         .await?;
 
-    Ok(order.ok_or(DataError::CreationFailed(errors::ORDER_CREATION_FAILED))?)
+    order.ok_or(DataError::CreationFailed(errors::ORDER_CREATION_FAILED))
 }
 
 pub async fn update_order_payment(
@@ -72,7 +72,7 @@ pub async fn update_order_payment(
              WHERE payment_status = $current_status
              RETURN *",
         )
-        .bind(("order", order_id.clone().into_record_id()))
+        .bind(("order", order_id.clone()))
         .bind(("payment_key", payment_key.to_string()))
         .bind(("payment_status", payment_status.as_str().to_string()))
         .bind(("current_status", PaymentStatus::Pending.as_str().to_string()))

@@ -4,9 +4,9 @@ use crate::{constants::errors, data::{errors::DataError, queries::shared::check_
 
 #[derive(Serialize)]
 struct UserRoleData {
-    user: surrealdb::RecordId,
+    user: UserId,
     role: String,
-    granted_by: Option<surrealdb::RecordId>,
+    granted_by: Option<UserId>,
 }
 
 #[derive(Deserialize)]
@@ -17,16 +17,16 @@ struct UserRoleRecord {
 
 pub async fn grant_admin_role(user_id: &UserId, granted_by: &UserId) -> Result<(), DataError> {
     // Check if user already has admin role
-    if check_user_is_admin(&user_id.clone().into_record_id()).await? {
+    if check_user_is_admin(user_id).await? {
         return Err(DataError::InvalidInput("User already has admin role".to_string()));
     }
 
     let _: Option<UserRoleRecord> = DB
         .create("user_role")
         .content(UserRoleData {
-            user: user_id.clone().into_record_id(),
+            user: user_id.clone(),
             role: Role::Admin.as_str().to_string(),
-            granted_by: Some(granted_by.clone().into_record_id()),
+            granted_by: Some(granted_by.clone()),
         })
         .await?;
 
@@ -39,7 +39,7 @@ pub async fn revoke_admin_role(user_id: &UserId, revoked_by: &UserId) -> Result<
     }
 
     DB.query("DELETE user_role WHERE user = $user AND role = $role")
-        .bind(("user", user_id.clone().into_record_id()))
+        .bind(("user", user_id.clone()))
         .bind(("role", Role::Admin.as_str().to_string()))
         .await?;
 

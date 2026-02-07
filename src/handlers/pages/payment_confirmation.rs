@@ -13,10 +13,8 @@ pub async fn get_payment_confirmation(
     ctx: PageContext,
     Path(raw_order_id): Path<String>,
 ) -> Result<Markup, HandlerError> {
-    let user_id = ctx.current_user.require_authenticated()
-        .ok_or(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED))?;
-    let order_id = OrderId::parse(&raw_order_id)
-        .ok_or(DataError::NotFound(errors::ORDER_NOT_FOUND))?;
+    let user_id = ctx.user_id();
+    let order_id = OrderId::parse_or_invalid(&raw_order_id)?;
 
     let order = queries::order::get_order_for_user(&order_id, user_id).await?;
 

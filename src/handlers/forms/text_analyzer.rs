@@ -1,8 +1,8 @@
-use axum::{Extension, extract::Multipart, response::{IntoResponse, Redirect}};
+use axum::{extract::Multipart, response::{IntoResponse, Redirect}};
 use tower_sessions::Session;
 
 use crate::{
-    auth::CurrentUser,
+    auth::AuthenticatedUser,
     constants::{errors, file_upload, pricing},
     data::{commands, errors::DataError},
     handlers::errors::HandlerResult,
@@ -64,15 +64,10 @@ async fn parse_file_upload(mut multipart: Multipart) -> Result<FileUploadResult,
 }
 
 pub async fn post_forms_text_analyzer(
-    Extension(current_user): Extension<CurrentUser>,
+    user: AuthenticatedUser,
     session: Session,
     multipart: Multipart,
 ) -> HandlerResult {
-    let (user_id, user_email) = match &current_user {
-        CurrentUser::Authenticated { user_id, email, .. } => (user_id.clone(), email.clone()),
-        CurrentUser::Guest => return Err(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED).into()),
-    };
-
     let upload = match parse_file_upload(multipart).await? {
         FileUploadResult::FileTooLarge => {
             return Ok(FlashMessage::error(format!("File too large. Maximum size is {} MB.", file_upload::MAX_FILE_SIZE / 1024 / 1024))
@@ -86,12 +81,12 @@ pub async fn post_forms_text_analyzer(
     let calculated_price = text_length * pricing::PRICE_PER_CHARACTER;
     let price_amount = calculated_price.max(pricing::MINIMUM_ORDER_AMOUNT);
 
-    let order_number = OrderNumber::generate(&user_id);
+    let order_number = OrderNumber::generate(&user.user_id);
 
     let order = commands::order::create_order(
         commands::order::CreateOrderParams {
-            user_id,
-            user_email,
+            user_id: user.user_id,
+            user_email: user.email,
             filename: upload.filename,
             file_size: upload.file_size,
             text_content: upload.text_content,

@@ -10,7 +10,7 @@ use crate::{
 #[derive(Serialize)]
 struct CreateTodoData {
     task: String,
-    author: surrealdb::RecordId,
+    author: UserId,
 }
 
 pub async fn create_todo(user_id: &UserId, task: &str) -> Result<(), DataError> {
@@ -18,7 +18,7 @@ pub async fn create_todo(user_id: &UserId, task: &str) -> Result<(), DataError> 
         .create("todo")
         .content(CreateTodoData {
             task: task.to_string(),
-            author: user_id.clone().into_record_id(),
+            author: user_id.clone(),
         })
         .await?;
 
@@ -28,8 +28,8 @@ pub async fn create_todo(user_id: &UserId, task: &str) -> Result<(), DataError> 
 pub async fn toggle_todo_completion(user_id: &UserId, todo_id: &TodoId) -> Result<Todo, DataError> {
     let mut result = DB
         .query("UPDATE $todo SET is_done = !is_done WHERE author = $author RETURN id, task, is_done")
-        .bind(("todo", todo_id.clone().into_record_id()))
-        .bind(("author", user_id.clone().into_record_id()))
+        .bind(("todo", todo_id.clone()))
+        .bind(("author", user_id.clone()))
         .await?;
 
     let todo: Option<Todo> = result.take(0)?;
@@ -39,8 +39,8 @@ pub async fn toggle_todo_completion(user_id: &UserId, todo_id: &TodoId) -> Resul
 pub async fn delete_todo(user_id: &UserId, todo_id: &TodoId) -> Result<(), DataError> {
     let mut result = DB
         .query("DELETE $todo WHERE author = $author RETURN BEFORE")
-        .bind(("todo", todo_id.clone().into_record_id()))
-        .bind(("author", user_id.clone().into_record_id()))
+        .bind(("todo", todo_id.clone()))
+        .bind(("author", user_id.clone()))
         .await?;
 
     let deleted: Option<Todo> = result.take(0)?;
