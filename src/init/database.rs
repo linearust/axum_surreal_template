@@ -35,10 +35,10 @@ pub async fn init_database(database_url: &str) {
         });
     }
 
-    let db_name = dotenvy::var("SURREAL_DB").unwrap_or_else(|_| "app".to_string());
-    let ns_name = dotenvy::var("SURREAL_NS").unwrap_or_else(|_| "app".to_string());
+    let database_name = dotenvy::var("SURREAL_DB").unwrap_or_else(|_| "app".to_string());
+    let namespace_name = dotenvy::var("SURREAL_NS").unwrap_or_else(|_| "app".to_string());
 
-    DB.use_ns(&ns_name).use_db(&db_name).await.unwrap_or_else(|e| {
+    DB.use_ns(&namespace_name).use_db(&database_name).await.unwrap_or_else(|e| {
         eprintln!("Failed to select namespace/database: {}", e);
         std::process::exit(1);
     });

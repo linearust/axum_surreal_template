@@ -1,49 +1,20 @@
-use chrono::{DateTime, Utc};
-use serde::Deserialize;
-use surrealdb::RecordId;
-
 use crate::{
     constants::errors,
     data::errors::DataError,
     db::DB,
     models::{
-        admin::{AdminStats, OrderDetail, OrderListItem, UserDetail, UserListItem},
+        admin::{AdminStats, OrderDetail, OrderListItem, UserListItem},
         order::PaymentStatus,
-        pagination, OrderId, UserId,
+        pagination::{self, PaginatedResult},
+        OrderId, Role, UserId,
     },
 };
 
-use super::shared::{check_user_is_admin, CountResult, SumResult};
+use super::shared::{CountResult, SumResult, IS_ADMIN_SUBQUERY, ORDER_COUNT_SUBQUERY, TOTAL_SPENT_SUBQUERY};
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Private Query Helpers
+// Admin Stats
 // ───────────────────────────────────────────────────────────────────────────────
-
-struct UserOrderStats {
-    order_count: i64,
-    total_spent: i32,
-}
-
-async fn get_user_order_stats(user_record_id: &RecordId) -> Result<UserOrderStats, DataError> {
-    let mut result = DB
-        .query(
-            r#"
-            SELECT count() as count FROM order WHERE user = $user AND payment_status = $paid_status GROUP ALL;
-            SELECT math::sum(price_amount) as total FROM order WHERE user = $user AND payment_status = $paid_status GROUP ALL;
-            "#,
-        )
-        .bind(("user", user_record_id.clone()))
-        .bind(("paid_status", PaymentStatus::Paid.as_str()))
-        .await?;
-
-    let order_count: Option<CountResult> = result.take(0)?;
-    let total_spent: Option<SumResult> = result.take(1)?;
-
-    Ok(UserOrderStats {
-        order_count: CountResult::unwrap_or_zero(order_count),
-        total_spent: SumResult::unwrap_or_zero(total_spent) as i32,
-    })
-}
 
 pub async fn get_admin_stats() -> Result<AdminStats, DataError> {
     let mut result = DB
@@ -71,86 +42,75 @@ pub async fn get_admin_stats() -> Result<AdminStats, DataError> {
     })
 }
 
-#[derive(Deserialize)]
-struct UserWithStats {
-    id: UserId,
-    email: String,
-    created_at: DateTime<Utc>,
-}
+// ───────────────────────────────────────────────────────────────────────────────
+// Users (Paginated)
+// ───────────────────────────────────────────────────────────────────────────────
 
-pub async fn get_users_paginated(page: i64, per_page: i64) -> Result<Vec<UserListItem>, DataError> {
+pub async fn get_users_paginated(
+    page: i64,
+    per_page: i64,
+) -> Result<PaginatedResult<UserListItem>, DataError> {
     let offset = pagination::offset(page, per_page);
 
     let mut result = DB
-        .query(
-            "SELECT id, email, created_at FROM user ORDER BY created_at DESC LIMIT $limit START $offset",
-        )
+        .query(format!(
+            "SELECT id, email, created_at, {IS_ADMIN_SUBQUERY}, {ORDER_COUNT_SUBQUERY}, {TOTAL_SPENT_SUBQUERY}
+            FROM user ORDER BY created_at DESC LIMIT $limit START $offset;
+            SELECT count() as count FROM user GROUP ALL;",
+        ))
+        .bind(("role", Role::Admin.as_str()))
+        .bind(("paid", PaymentStatus::Paid.as_str()))
         .bind(("limit", per_page))
         .bind(("offset", offset))
         .await?;
 
-    let users: Vec<UserWithStats> = result.take(0)?;
+    let users: Vec<UserListItem> = result.take(0)?;
+    let total: Option<CountResult> = result.take(1)?;
+    let total_count = CountResult::unwrap_or_zero(total);
 
-    let mut items = Vec::with_capacity(users.len());
-    for user in users {
-        let user_record_id = user.id.clone().into_record_id();
-        let is_admin = check_user_is_admin(&user_record_id).await?;
-        let stats = get_user_order_stats(&user_record_id).await?;
-
-        items.push(UserListItem {
-            id: user.id,
-            email: user.email,
-            is_admin,
-            created_at: user.created_at,
-            order_count: stats.order_count,
-            total_spent: stats.total_spent,
-        });
-    }
-
-    Ok(items)
+    Ok(PaginatedResult::new(users, total_count, page, per_page))
 }
 
-pub async fn get_total_user_count() -> Result<i64, DataError> {
+// ───────────────────────────────────────────────────────────────────────────────
+// User Detail
+// ───────────────────────────────────────────────────────────────────────────────
+
+pub async fn get_user_detail(user_id: &UserId) -> Result<UserListItem, DataError> {
     let mut result = DB
-        .query("SELECT count() as count FROM user GROUP ALL")
+        .query(format!(
+            "SELECT id, email, created_at, {IS_ADMIN_SUBQUERY}, {ORDER_COUNT_SUBQUERY}, {TOTAL_SPENT_SUBQUERY}
+            FROM user WHERE id = $user_id",
+        ))
+        .bind(("user_id", user_id.clone().into_record_id()))
+        .bind(("role", Role::Admin.as_str()))
+        .bind(("paid", PaymentStatus::Paid.as_str()))
         .await?;
 
-    let count: Option<CountResult> = result.take(0)?;
-    Ok(CountResult::unwrap_or_zero(count))
+    let user: Option<UserListItem> = result.take(0)?;
+    user.ok_or(DataError::NotFound(errors::USER_NOT_FOUND))
 }
 
-pub async fn get_user_detail(user_id: &UserId) -> Result<UserDetail, DataError> {
-    let user: Option<UserWithStats> = DB.select(user_id.clone().into_record_id()).await?;
-    let user = user.ok_or(DataError::NotFound(errors::USER_NOT_FOUND))?;
+// ───────────────────────────────────────────────────────────────────────────────
+// User Orders (Paginated)
+// ───────────────────────────────────────────────────────────────────────────────
 
-    let user_record_id = user_id.clone().into_record_id();
-    let is_admin = check_user_is_admin(&user_record_id).await?;
-    let stats = get_user_order_stats(&user_record_id).await?;
-
-    Ok(UserDetail {
-        id: user.id,
-        email: user.email,
-        is_admin,
-        created_at: user.created_at,
-        order_count: stats.order_count,
-        total_spent: stats.total_spent,
-    })
-}
-
-pub async fn get_user_orders(
+pub async fn get_user_orders_paginated(
     user_id: &UserId,
     page: i64,
     per_page: i64,
-) -> Result<Vec<OrderListItem>, DataError> {
+) -> Result<PaginatedResult<OrderListItem>, DataError> {
     let offset = pagination::offset(page, per_page);
 
     let mut result = DB
         .query(
-            "SELECT id, order_number, user_email, price_amount, payment_status, created_at
-             FROM order
-             WHERE user = $user
-             ORDER BY created_at DESC
-             LIMIT $limit START $offset",
+            r#"
+            SELECT id, order_number, user_email, price_amount, payment_status, created_at
+            FROM order
+            WHERE user = $user
+            ORDER BY created_at DESC
+            LIMIT $limit START $offset;
+            SELECT count() as count FROM order WHERE user = $user GROUP ALL;
+            "#,
         )
         .bind(("user", user_id.clone().into_record_id()))
         .bind(("limit", per_page))
@@ -158,18 +118,15 @@ pub async fn get_user_orders(
         .await?;
 
     let orders: Vec<OrderListItem> = result.take(0)?;
-    Ok(orders)
+    let total: Option<CountResult> = result.take(1)?;
+    let total_count = CountResult::unwrap_or_zero(total);
+
+    Ok(PaginatedResult::new(orders, total_count, page, per_page))
 }
 
-pub async fn get_user_order_count(user_id: &UserId) -> Result<i64, DataError> {
-    let mut result = DB
-        .query("SELECT count() as count FROM order WHERE user = $user GROUP ALL")
-        .bind(("user", user_id.clone().into_record_id()))
-        .await?;
-
-    let count: Option<CountResult> = result.take(0)?;
-    Ok(CountResult::unwrap_or_zero(count))
-}
+// ───────────────────────────────────────────────────────────────────────────────
+// Orders (Paginated, with optional status filter)
+// ───────────────────────────────────────────────────────────────────────────────
 
 fn build_status_filter_clause(status_filter: &Option<PaymentStatus>) -> &'static str {
     match status_filter {
@@ -182,16 +139,19 @@ pub async fn get_orders_paginated(
     status_filter: Option<PaymentStatus>,
     page: i64,
     per_page: i64,
-) -> Result<Vec<OrderListItem>, DataError> {
+) -> Result<PaginatedResult<OrderListItem>, DataError> {
     let offset = pagination::offset(page, per_page);
     let where_clause = build_status_filter_clause(&status_filter);
 
     let query = format!(
-        "SELECT id, order_number, user_email, price_amount, payment_status, created_at
-         FROM order
-         {where_clause}
-         ORDER BY created_at DESC
-         LIMIT $limit START $offset"
+        r#"
+        SELECT id, order_number, user_email, price_amount, payment_status, created_at
+        FROM order
+        {where_clause}
+        ORDER BY created_at DESC
+        LIMIT $limit START $offset;
+        SELECT count() as count FROM order {where_clause} GROUP ALL;
+        "#
     );
 
     let mut result = DB
@@ -202,22 +162,15 @@ pub async fn get_orders_paginated(
         .await?;
 
     let orders: Vec<OrderListItem> = result.take(0)?;
-    Ok(orders)
+    let total: Option<CountResult> = result.take(1)?;
+    let total_count = CountResult::unwrap_or_zero(total);
+
+    Ok(PaginatedResult::new(orders, total_count, page, per_page))
 }
 
-pub async fn get_total_order_count(status_filter: Option<PaymentStatus>) -> Result<i64, DataError> {
-    let where_clause = build_status_filter_clause(&status_filter);
-
-    let query = format!("SELECT count() as count FROM order {where_clause} GROUP ALL");
-
-    let mut result = DB
-        .query(&query)
-        .bind(("status", status_filter.map(|s| s.as_str().to_string())))
-        .await?;
-
-    let count: Option<CountResult> = result.take(0)?;
-    Ok(CountResult::unwrap_or_zero(count))
-}
+// ───────────────────────────────────────────────────────────────────────────────
+// Order Detail
+// ───────────────────────────────────────────────────────────────────────────────
 
 pub async fn get_order_detail(order_id: &OrderId) -> Result<OrderDetail, DataError> {
     let mut result = DB

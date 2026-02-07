@@ -33,7 +33,7 @@ pub async fn post_forms_sign_in(
     let token = auth::generate_token();
     commands::magic_link::create_magic_link(&form.email, &token).await?;
 
-    if let Err(e) = email::send_magic_link(config.email(), &form.email, &token).await {
+    if let Err(e) = email::send_magic_link(config.email(), &form.email, &token, paths::actions::VERIFY_MAGIC_LINK).await {
         tracing::error!("Failed to send magic link email: {}", e);
         return Ok(FlashMessage::error(messages::EMAIL_SEND_FAILED)
             .set_and_redirect(&session, paths::pages::SIGN_IN)

@@ -28,9 +28,9 @@ fn app_routes(state: AppState, session_layer: SessionManagerLayer<SurrealSession
         .merge(admin_routes())
         .fallback(handlers::fallback::handle_404)
         .with_state(state)
-        // CRITICAL: Layers apply bottom-to-top. session_layer → session_context → handler.
-        // session_context loads CurrentUser from session — must run after session_layer.
-        .layer(middleware::from_fn_with_state(state_clone, middlewares::session_context))
+        // CRITICAL: Layers apply bottom-to-top. session_layer → load_session_extensions → handler.
+        // load_session_extensions loads CurrentUser from session — must run after session_layer.
+        .layer(middleware::from_fn_with_state(state_clone, middlewares::load_session_extensions))
         .layer(session_layer)
 }
 
@@ -47,7 +47,7 @@ fn public_routes() -> Router<AppState> {
 }
 
 /// require_authentication redirects guests to sign-in.
-/// MUST be outermost layer (runs first) and requires session_context to have loaded CurrentUser.
+/// MUST be outermost layer (runs first) and requires load_session_extensions to have loaded CurrentUser.
 fn protected_routes() -> Router<AppState> {
     Router::new()
         .merge(pages::protected_page_routes())

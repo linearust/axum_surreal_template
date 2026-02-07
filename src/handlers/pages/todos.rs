@@ -1,23 +1,17 @@
-use axum::{Extension, extract::State};
 use maud::Markup;
 
 use crate::{
-    auth::CurrentUser,
-    config::AppConfig,
-    data::queries,
-    handlers::errors::HandlerError,
-    session::FlashMessage,
+    constants::errors,
+    data::{errors::DataError, queries},
+    handlers::{context::PageContext, errors::HandlerError},
     views::pages,
 };
 
-pub async fn get_todos(
-    State(config): State<AppConfig>,
-    Extension(current_user): Extension<CurrentUser>,
-    Extension(flash): Extension<Option<FlashMessage>>,
-) -> Result<Markup, HandlerError> {
-    let user_id = current_user.require_authenticated()?;
+pub async fn get_todos(ctx: PageContext) -> Result<Markup, HandlerError> {
+    let user_id = ctx.current_user.require_authenticated()
+        .ok_or(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED))?;
 
     let todos = queries::todo::get_todos_for_user(user_id).await?;
 
-    Ok(pages::todos(&current_user, flash.as_ref(), config.site_name(), todos, None, None))
+    Ok(pages::todos(&ctx.current_user, ctx.flash_ref(), ctx.site_name(), todos, None, None))
 }

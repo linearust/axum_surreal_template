@@ -1,7 +1,8 @@
 use crate::{
     auth::CurrentUser,
+    constants::css,
     session::FlashMessage,
-    views::helpers as formatting,
+    views::helpers,
     models::admin::{PaginatedResult, UserListItem},
     paths,
     views::{components::admin::pagination, layout::base::base_layout},
@@ -54,7 +55,7 @@ pub fn users(
 }
 
 fn user_row(user: &UserListItem) -> Markup {
-    let date_display = formatting::format_datetime(user.created_at);
+    let date_display = helpers::format_datetime(user.created_at);
 
     html! {
         tr class="border-b" {
@@ -68,10 +69,10 @@ fn user_row(user: &UserListItem) -> Markup {
             }
             td class="py-2 px-2 text-center text-gray-600" { (date_display) }
             td class="py-2 px-2 text-center" { (user.order_count) }
-            td class="py-2 px-2 text-right" { "₩" (formatting::format_price(user.total_spent)) }
+            td class="py-2 px-2 text-right" { "₩" (helpers::format_price(user.total_spent)) }
             td class="py-2 px-2 text-center" {
                 a href=(paths::with_param(paths::pages::admin::USER_DETAIL, "user_id", &user.id))
-                    class="text-indigo-600 hover:underline text-sm"
+                    class=(css::LINK_SM)
                 {
                     "View"
                 }

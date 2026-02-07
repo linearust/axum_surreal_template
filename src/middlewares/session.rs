@@ -3,14 +3,14 @@ use tower_sessions::Session;
 
 use crate::{auth::{self, CurrentUser, SESSION_USER_ID_KEY}, session::FlashMessage, models::UserId};
 
-pub async fn session_context(
+pub async fn load_session_extensions(
     session: Session,
     mut req: Request,
     next: Next,
 ) -> axum::response::Response {
     let current_user = match session.get::<UserId>(SESSION_USER_ID_KEY).await {
         Ok(Some(user_id)) => {
-            match auth::service::load_user_context(&user_id).await {
+            match auth::load_user_context(&user_id).await {
                 Ok(Some(user)) => user,
                 Ok(None) => {
                     tracing::warn!("User ID {:?} in session but not found in database", user_id);

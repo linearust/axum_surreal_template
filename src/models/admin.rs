@@ -23,8 +23,6 @@ pub struct UserListItem {
     pub total_spent: i32,
 }
 
-pub type UserDetail = UserListItem;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderListItem {
     pub id: OrderId,

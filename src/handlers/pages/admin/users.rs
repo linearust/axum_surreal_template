@@ -1,36 +1,26 @@
-use axum::{Extension, extract::{Query, State}};
+use axum::extract::Query;
 use maud::Markup;
 
 use crate::{
-    auth::CurrentUser,
-    config::AppConfig,
     constants::admin::ITEMS_PER_PAGE,
     data::queries::admin,
-    session::FlashMessage,
-    handlers::errors::HandlerError,
+    handlers::{context::PageContext, errors::HandlerError},
     models::pagination::PaginationQuery,
-    models::admin::PaginatedResult,
     views::pages::admin as admin_views,
 };
 
 pub async fn get_admin_users(
-    State(config): State<AppConfig>,
+    ctx: PageContext,
     Query(query): Query<PaginationQuery>,
-    Extension(current_user): Extension<CurrentUser>,
-    Extension(flash): Extension<Option<FlashMessage>>,
 ) -> Result<Markup, HandlerError> {
     let page = query.page.max(1);
 
-    let users = admin::get_users_paginated(page, ITEMS_PER_PAGE).await?;
-
-    let total_count = admin::get_total_user_count().await?;
-
-    let paginated = PaginatedResult::new(users, total_count, page, ITEMS_PER_PAGE);
+    let paginated = admin::get_users_paginated(page, ITEMS_PER_PAGE).await?;
 
     Ok(admin_views::users(
-        &current_user,
-        flash.as_ref(),
-        config.site_name(),
+        &ctx.current_user,
+        ctx.flash_ref(),
+        ctx.site_name(),
         paginated,
     ))
 }

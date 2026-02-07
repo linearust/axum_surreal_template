@@ -1,26 +1,18 @@
-use axum::{Extension, extract::State};
 use maud::Markup;
 
 use crate::{
-    auth::CurrentUser,
-    config::AppConfig,
     data::queries,
-    handlers::errors::HandlerError,
-    session::FlashMessage,
+    handlers::{context::PageContext, errors::HandlerError},
     views::pages,
 };
 
-pub async fn get_root(
-    State(config): State<AppConfig>,
-    Extension(current_user): Extension<CurrentUser>,
-    Extension(flash): Extension<Option<FlashMessage>>,
-) -> Result<Markup, HandlerError> {
-    let user_email = match &current_user {
-        CurrentUser::Authenticated { user_id, .. } => {
+pub async fn get_root(ctx: PageContext) -> Result<Markup, HandlerError> {
+    let user_email = match &ctx.current_user {
+        crate::auth::CurrentUser::Authenticated { user_id, .. } => {
             queries::user::get_user_email(user_id).await?
         }
-        CurrentUser::Guest => None,
+        crate::auth::CurrentUser::Guest => None,
     };
 
-    Ok(pages::root(&current_user, flash.as_ref(), config.site_name(), user_email.as_deref(), None, None, None))
+    Ok(pages::root(&ctx.current_user, ctx.flash_ref(), ctx.site_name(), user_email.as_deref(), None, None, None))
 }

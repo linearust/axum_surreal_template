@@ -5,7 +5,6 @@ use lettre::{
 };
 
 use super::templates;
-use crate::paths;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EmailError {
@@ -91,7 +90,7 @@ impl EmailConfig {
                     .credentials(creds)
                     .build())
             }
-            EmailMode::Console => unreachable!("Console mode doesn't need SMTP transport"),
+            EmailMode::Console => Err(EmailError::Config("SMTP transport not available in console mode".to_string())),
         }
     }
 }
@@ -100,8 +99,9 @@ pub async fn send_magic_link(
     config: &EmailConfig,
     to_email: &str,
     token: &str,
+    verify_path: &str,
 ) -> Result<(), EmailError> {
-    let magic_link = format!("{}{}?token={}", config.base_url, paths::actions::VERIFY_MAGIC_LINK, token);
+    let magic_link = format!("{}{}?token={}", config.base_url, verify_path, token);
 
     let from_mailbox: Mailbox = format!("{} <{}>", config.from_name, config.from_address).parse()?;
     let to_mailbox: Mailbox = to_email.parse()?;

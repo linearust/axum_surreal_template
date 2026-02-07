@@ -7,8 +7,8 @@ use validator::Validate;
 use crate::{
     auth::CurrentUser,
     config::AppConfig,
-    constants::messages,
-    data::{commands, queries},
+    constants::{errors, messages},
+    data::{commands, errors::DataError, queries},
     session::FlashMessage,
     handlers::errors::HandlerResult,
     models::{todo::{CreateTodoForm, FIELD_TASK}, UserId},
@@ -24,7 +24,8 @@ pub async fn post_forms_todos(
     session: Session,
     Form(form): Form<CreateTodoForm>,
 ) -> HandlerResult {
-    let user_id = current_user.require_authenticated()?;
+    let user_id = current_user.require_authenticated()
+        .ok_or(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED))?;
 
     if let Err(validation_errors) = form.validate() {
         let errors = parse_validation_errors(&validation_errors);

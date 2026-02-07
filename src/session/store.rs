@@ -83,21 +83,20 @@ impl SessionStore for SurrealSessionStore {
             .await
             .map_err(|e| session_store::Error::Backend(e.to_string()))?;
 
-        match session_data {
-            Some(s) => {
-                let expires_chrono: DateTime<Utc> = s.expires_at.into();
-                let expires = chrono_to_time(expires_chrono);
-                if expires > OffsetDateTime::now_utc() {
-                    let session: Record = rmp_serde::from_slice(s.data.as_slice()).map_err(|e| {
-                        session_store::Error::Decode(e.to_string())
-                    })?;
-                    Ok(Some(session))
-                } else {
-                    Ok(None)
-                }
-            }
-            None => Ok(None),
+        let Some(s) = session_data else {
+            return Ok(None);
+        };
+
+        let expires_chrono: DateTime<Utc> = s.expires_at.into();
+        let expires = chrono_to_time(expires_chrono);
+        if expires <= OffsetDateTime::now_utc() {
+            return Ok(None);
         }
+
+        let session: Record = rmp_serde::from_slice(s.data.as_slice()).map_err(|e| {
+            session_store::Error::Decode(e.to_string())
+        })?;
+        Ok(Some(session))
     }
 
     async fn delete(&self, session_id: &Id) -> session_store::Result<()> {

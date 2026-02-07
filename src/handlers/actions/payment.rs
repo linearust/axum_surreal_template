@@ -5,12 +5,13 @@ use tower_sessions::Session;
 use crate::{
     auth::CurrentUser,
     config::AppConfig,
-    constants::messages,
-    data::{commands::{self, order::ConfirmPaymentParams}, queries},
+    constants::{errors, messages},
+    data::{commands, errors::DataError, queries},
     session::FlashMessage,
     handlers::errors::HandlerResult,
     models::{OrderId, OrderNumber, order::PaymentStatus},
     paths,
+    payment::{self, ConfirmPaymentParams},
 };
 
 #[derive(Deserialize)]
@@ -23,7 +24,8 @@ pub async fn post_actions_payment_initiate(
     session: Session,
     Form(form): Form<PaymentInitiateForm>,
 ) -> HandlerResult {
-    let user_id = current_user.require_authenticated()?;
+    let user_id = current_user.require_authenticated()
+        .ok_or(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED))?;
 
     let order = queries::order::get_order_for_user(&form.order_id, user_id).await?;
 
@@ -58,7 +60,8 @@ pub async fn get_actions_payment_verify(
     session: Session,
     Query(query): Query<PaymentVerifyQuery>,
 ) -> HandlerResult {
-    let user_id = current_user.require_authenticated()?;
+    let user_id = current_user.require_authenticated()
+        .ok_or(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED))?;
     let order = queries::order::get_order_by_order_number_for_user(&query.order_number, user_id).await?;
 
     if query.amount != order.price_amount {
@@ -66,7 +69,7 @@ pub async fn get_actions_payment_verify(
         return redirect_with_error(&session, &order.id).await;
     }
 
-    let status = commands::order::confirm_payment_with_toss(ConfirmPaymentParams {
+    let status = payment::confirm_payment_with_toss(ConfirmPaymentParams {
         secret_key: config.payment().toss_secret_key().to_string(),
         order_number: query.order_number.clone(),
         payment_key: query.payment_key.clone(),

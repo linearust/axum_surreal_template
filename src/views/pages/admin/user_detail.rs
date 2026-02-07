@@ -1,10 +1,11 @@
 use crate::{
     auth::CurrentUser,
+    constants::css,
     session::FlashMessage,
-    views::helpers as formatting,
-    models::admin::{OrderListItem, PaginatedResult, UserDetail},
+    views::helpers,
+    models::admin::{OrderListItem, PaginatedResult, UserListItem},
     paths,
-    views::{components::admin::{order_row, pagination}, layout::base::base_layout},
+    views::{components::admin::{info_field, info_field_mono, order_row, pagination}, layout::base::base_layout},
 };
 use maud::{html, Markup};
 
@@ -12,14 +13,14 @@ pub fn user_detail(
     current_user: &CurrentUser,
     flash: Option<&FlashMessage>,
     site_name: &str,
-    user: UserDetail,
+    user: UserListItem,
     paginated_orders: PaginatedResult<OrderListItem>,
 ) -> Markup {
     let content = html! {
         div class="max-w-6xl mx-auto" {
             div class="mb-4" {
                 a href=(paths::pages::admin::USERS)
-                    class="text-indigo-600 hover:underline text-sm"
+                    class=(css::LINK_SM)
                 {
                     "← Back to Users"
                 }
@@ -44,37 +45,22 @@ pub fn user_detail(
 }
 
 
-fn user_info_section(user: &UserDetail) -> Markup {
+fn user_info_section(user: &UserListItem) -> Markup {
     html! {
         div class="mb-8 border p-4" {
             h2 class="text-lg mb-3" { "User Information" }
             div class="space-y-2 text-sm" {
-                div {
-                    span class="text-gray-600" { "Email: " }
-                    span { (user.email) }
-                }
-                div {
-                    span class="text-gray-600" { "User ID: " }
-                    span class="font-mono text-xs" { (user.id) }
-                }
-                div {
-                    span class="text-gray-600" { "Signup Date: " }
-                    span { (formatting::format_datetime(user.created_at)) }
-                }
-                div {
-                    span class="text-gray-600" { "Total Orders: " }
-                    span { (user.order_count) }
-                }
-                div {
-                    span class="text-gray-600" { "Total Spent: " }
-                    span { "₩" (formatting::format_price(user.total_spent)) }
-                }
+                (info_field("Email: ", &user.email))
+                (info_field_mono("User ID: ", &user.id))
+                (info_field("Signup Date: ", helpers::format_datetime(user.created_at)))
+                (info_field("Total Orders: ", user.order_count))
+                (info_field("Total Spent: ", format!("₩{}", helpers::format_price(user.total_spent))))
             }
         }
     }
 }
 
-fn admin_role_section(user: &UserDetail) -> Markup {
+fn admin_role_section(user: &UserListItem) -> Markup {
     html! {
         div class="mb-8 border p-4" {
             h2 class="text-lg mb-3" { "Admin Role" }
@@ -112,7 +98,7 @@ fn admin_role_section(user: &UserDetail) -> Markup {
     }
 }
 
-fn user_orders_section(user: &UserDetail, paginated_orders: &PaginatedResult<OrderListItem>) -> Markup {
+fn user_orders_section(user: &UserListItem, paginated_orders: &PaginatedResult<OrderListItem>) -> Markup {
     html! {
         div {
             h2 class="text-lg mb-3" { "Orders" }

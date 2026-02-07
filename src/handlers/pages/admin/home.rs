@@ -1,26 +1,18 @@
-use axum::{Extension, extract::State};
 use maud::Markup;
 
 use crate::{
-    auth::CurrentUser,
-    config::AppConfig,
     data::queries::admin,
-    session::FlashMessage,
-    handlers::errors::HandlerError,
+    handlers::{context::PageContext, errors::HandlerError},
     views::pages::admin as admin_views,
 };
 
-pub async fn get_admin_home(
-    State(config): State<AppConfig>,
-    Extension(current_user): Extension<CurrentUser>,
-    Extension(flash): Extension<Option<FlashMessage>>,
-) -> Result<Markup, HandlerError> {
+pub async fn get_admin_home(ctx: PageContext) -> Result<Markup, HandlerError> {
     let stats = admin::get_admin_stats().await?;
 
     Ok(admin_views::home(
-        &current_user,
-        flash.as_ref(),
-        config.site_name(),
+        &ctx.current_user,
+        ctx.flash_ref(),
+        ctx.site_name(),
         stats,
     ))
 }

@@ -11,18 +11,18 @@ use crate::{
     session::FlashMessage,
 };
 
-struct ParsedUpload {
+struct FileUpload {
     filename: String,
     file_size: i32,
     text_content: String,
 }
 
-enum ParseResult {
-    Success(ParsedUpload),
+enum FileUploadResult {
+    Success(FileUpload),
     FileTooLarge,
 }
 
-async fn parse_file_upload(mut multipart: Multipart) -> Result<ParseResult, DataError> {
+async fn parse_file_upload(mut multipart: Multipart) -> Result<FileUploadResult, DataError> {
     while let Some(field) = multipart.next_field().await.map_err(|e| {
         tracing::error!("Multipart error: {}", e);
         DataError::InvalidInput(format!("Failed to process multipart data: {}", e))
@@ -45,7 +45,7 @@ async fn parse_file_upload(mut multipart: Multipart) -> Result<ParseResult, Data
         })?;
 
         if data.len() > file_upload::MAX_FILE_SIZE {
-            return Ok(ParseResult::FileTooLarge);
+            return Ok(FileUploadResult::FileTooLarge);
         }
 
         let text_content = String::from_utf8(data.to_vec()).map_err(|e| {
@@ -53,7 +53,7 @@ async fn parse_file_upload(mut multipart: Multipart) -> Result<ParseResult, Data
             DataError::InvalidInput("File must be valid UTF-8 text".to_string())
         })?;
 
-        return Ok(ParseResult::Success(ParsedUpload {
+        return Ok(FileUploadResult::Success(FileUpload {
             filename: filename.ok_or(DataError::NotFound(errors::NO_FILE_PROVIDED))?,
             file_size: data.len() as i32,
             text_content,
@@ -70,16 +70,16 @@ pub async fn post_forms_text_analyzer(
 ) -> HandlerResult {
     let (user_id, user_email) = match &current_user {
         CurrentUser::Authenticated { user_id, email, .. } => (user_id.clone(), email.clone()),
-        CurrentUser::Guest => unreachable!("Protected route accessed by guest"),
+        CurrentUser::Guest => return Err(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED).into()),
     };
 
     let upload = match parse_file_upload(multipart).await? {
-        ParseResult::FileTooLarge => {
+        FileUploadResult::FileTooLarge => {
             return Ok(FlashMessage::error(format!("File too large. Maximum size is {} MB.", file_upload::MAX_FILE_SIZE / 1024 / 1024))
                 .set_and_redirect(&session, paths::pages::TEXT_ANALYZER)
                 .await?);
         }
-        ParseResult::Success(upload) => upload,
+        FileUploadResult::Success(upload) => upload,
     };
 
     let text_length = upload.text_content.chars().count() as i32;

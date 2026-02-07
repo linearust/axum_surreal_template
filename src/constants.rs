@@ -81,3 +81,9 @@ pub mod admin {
 pub mod dashboard {
     pub const RECENT_ORDERS_LIMIT: i64 = 10;
 }
+
+pub mod css {
+    pub const LINK: &str = "text-indigo-600 hover:underline";
+    pub const LINK_SM: &str = "text-indigo-600 hover:underline text-sm";
+    pub const NAV_LINK: &str = "hover:text-indigo-600";
+}

@@ -1,4 +1,4 @@
-use crate::{auth::CurrentUser, session::FlashMessage, paths, views::layout::base::base_layout};
+use crate::{auth::CurrentUser, session::FlashMessage, paths, views::{components::form::submit_button, layout::base::base_layout}};
 use maud::{Markup, html};
 
 pub fn text_analyzer(
@@ -24,10 +24,7 @@ pub fn text_analyzer(
                         class="w-full px-3 py-2 border";
                 }
 
-                button
-                    type="submit"
-                    class="w-full bg-indigo-600 text-white px-3 py-2 hover:bg-indigo-700"
-                    { "Get Quote" }
+                (submit_button("Get Quote"))
             }
         }
     };

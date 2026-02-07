@@ -1,13 +1,13 @@
-use crate::{constants::errors, data::errors::DataError, models::UserId};
+use crate::models::UserId;
 
 pub const SESSION_USER_ID_KEY: &str = "authenticated_user_id";
 
-/// Injected via Extension by session_context middleware.
+/// Injected via Extension by load_session_extensions middleware.
 ///
 /// Protected routes use `require_authentication` middleware which redirects
-/// guests before handlers run. If `require_authenticated()` returns Err:
+/// guests before handlers run. If `require_authenticated()` returns None:
 /// check route is in protected_routes(), verify middleware ordering
-/// (session_layer → session_context → require_authentication).
+/// (session_layer → load_session_extensions → require_authentication).
 #[derive(Clone, Debug)]
 pub enum CurrentUser {
     Authenticated {
@@ -19,13 +19,13 @@ pub enum CurrentUser {
 }
 
 impl CurrentUser {
-    /// Only call in protected routes — returns error on Guest.
-    /// If this returns Err, check route is in protected_routes() and
-    /// verify middleware ordering (session_layer → session_context → require_authentication).
-    pub fn require_authenticated(&self) -> Result<&UserId, DataError> {
+    /// Only call in protected routes — returns None on Guest.
+    /// If this returns None, check route is in protected_routes() and
+    /// verify middleware ordering (session_layer → load_session_extensions → require_authentication).
+    pub fn require_authenticated(&self) -> Option<&UserId> {
         match self {
-            CurrentUser::Authenticated { user_id, .. } => Ok(user_id),
-            CurrentUser::Guest => Err(DataError::Unauthorized(errors::AUTHENTICATION_REQUIRED)),
+            CurrentUser::Authenticated { user_id, .. } => Some(user_id),
+            CurrentUser::Guest => None,
         }
     }
 

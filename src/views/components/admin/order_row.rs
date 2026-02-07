@@ -1,16 +1,16 @@
-use crate::{views::helpers as formatting, models::admin::OrderListItem, paths};
+use crate::{constants::css, views::helpers, models::admin::OrderListItem, paths};
 use maud::{html, Markup};
 
 pub fn order_row(order: &OrderListItem, show_user: bool) -> Markup {
-    let status_class = order.payment_status.css_class();
+    let status_class = helpers::payment_status_class(&order.payment_status);
     let status_text = order.payment_status.display_text();
-    let date_display = formatting::format_datetime(order.created_at);
+    let date_display = helpers::format_datetime(order.created_at);
 
     html! {
         tr class="border-b" {
             td class="py-2 px-2" {
                 a href=(paths::helpers::order_detail_path(&order.id))
-                    class="text-indigo-600 hover:underline"
+                    class=(css::LINK)
                 {
                     (order.order_number)
                 }
@@ -28,7 +28,7 @@ pub fn order_row(order: &OrderListItem, show_user: bool) -> Markup {
             @if show_user {
                 td class="py-2 px-2 text-center" {
                     a href=(paths::helpers::order_detail_path(&order.id))
-                        class="text-indigo-600 hover:underline text-sm"
+                        class=(css::LINK_SM)
                     {
                         "View"
                     }

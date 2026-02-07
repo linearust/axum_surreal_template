@@ -9,6 +9,7 @@ mod init;
 mod middlewares;
 mod models;
 mod paths;
+mod payment;
 mod routes;
 mod session;
 mod views;
@@ -19,7 +20,13 @@ use config::{AppConfig, AppState};
 async fn main() {
     init::init_logging();
 
-    dotenvy::dotenv().ok();
+    if let Err(e) = dotenvy::dotenv() {
+        // NotPresent is fine — env vars may come from the environment directly
+        if !matches!(e, dotenvy::Error::Io(ref io) if io.kind() == std::io::ErrorKind::NotFound) {
+            eprintln!("Failed to load .env file: {}", e);
+            std::process::exit(1);
+        }
+    }
 
     let config = AppConfig::from_env().unwrap_or_else(|e| {
         eprintln!("Configuration error: {}", e);

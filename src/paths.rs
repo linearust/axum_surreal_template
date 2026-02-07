@@ -51,8 +51,8 @@ pub mod actions {
     define_nested_routes!("/actions", {
         SIGN_OUT => "/sign_out",
         VERIFY_MAGIC_LINK => "/auth/verify",
-        TODOS_TODO_ID => "/todos/{todo_id}",
-        TODOS_TODO_ID_TOGGLE => "/todos/{todo_id}/toggle",
+        TODO => "/todos/{todo_id}",
+        TODO_TOGGLE => "/todos/{todo_id}/toggle",
         PAYMENT_INITIATE => "/payment/initiate",
         PAYMENT_VERIFY => "/payment/verify",
     });

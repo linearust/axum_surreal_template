@@ -3,6 +3,12 @@ use surrealdb::RecordId;
 
 use crate::{data::errors::DataError, db::DB, models::Role};
 
+// Reusable SurrealQL subqueries operating on $parent user row.
+// Bind $role and $paid when using these.
+pub const IS_ADMIN_SUBQUERY: &str = "(SELECT count() FROM user_role WHERE user = $parent.id AND role = $role GROUP ALL)[0].count OR 0 > 0 AS is_admin";
+pub const ORDER_COUNT_SUBQUERY: &str = r#"(SELECT count() FROM order WHERE user = $parent.id AND payment_status = $paid GROUP ALL)[0].count OR 0 AS order_count"#;
+pub const TOTAL_SPENT_SUBQUERY: &str = r#"(SELECT math::sum(price_amount) FROM order WHERE user = $parent.id AND payment_status = $paid GROUP ALL)[0]["math::sum"] OR 0 AS total_spent"#;
+
 /// Query result type for COUNT() aggregations.
 /// Use with: SELECT count() as count FROM ... GROUP ALL
 #[derive(Deserialize)]

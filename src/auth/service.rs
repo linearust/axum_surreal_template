@@ -4,7 +4,7 @@ use crate::{data::queries, models::UserId};
 
 use super::CurrentUser;
 
-/// Loads user context from database. Called by session_context middleware.
+/// Loads user context from database. Called by load_session_extensions middleware.
 pub async fn load_user_context(user_id: &UserId) -> Result<Option<CurrentUser>, crate::data::errors::DataError> {
     match queries::user::get_user_info(user_id).await? {
         Some(info) => Ok(Some(CurrentUser::Authenticated {

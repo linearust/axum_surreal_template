@@ -1,5 +1,5 @@
 use maud::{html, Markup};
-use crate::paths;
+use crate::{constants::css, paths};
 
 pub fn pagination(base_path: &str, current_page: i64, total_pages: i64, has_prev: bool, has_next: bool) -> Markup {
     if total_pages <= 1 {
@@ -10,7 +10,7 @@ pub fn pagination(base_path: &str, current_page: i64, total_pages: i64, has_prev
         div class="flex items-center justify-center gap-2 mt-4" {
             @if has_prev {
                 a href=(paths::with_page(base_path, current_page - 1))
-                    class="text-indigo-600 hover:underline"
+                    class=(css::LINK)
                 {
                     "←"
                 }
@@ -39,7 +39,7 @@ pub fn pagination(base_path: &str, current_page: i64, total_pages: i64, has_prev
 
             @if has_next {
                 a href=(paths::with_page(base_path, current_page + 1))
-                    class="text-indigo-600 hover:underline"
+                    class=(css::LINK)
                 {
                     "→"
                 }
