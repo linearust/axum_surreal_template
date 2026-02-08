@@ -15,10 +15,10 @@ use crate::{
     handlers::errors::HandlerResult,
     models::contact::{ContactForm, FIELD_EMAIL, FIELD_MESSAGE},
     paths,
-    views::pages,
+    views::{context::ViewContext, pages},
 };
 
-use super::parse_validation_errors;
+use crate::handlers::shared::parse_validation_errors;
 
 pub async fn post_forms_contact(
     State(config): State<AppConfig>,
@@ -71,13 +71,12 @@ fn render_validation_errors(
     errors: HashMap<String, String>,
     user_email: Option<String>,
 ) -> Response {
+    let ctx = ViewContext { current_user, flash: None, site_name };
     let email_to_show = user_email.as_deref().or(Some(&form.email));
     (
         StatusCode::BAD_REQUEST,
         pages::root(
-            current_user,
-            None,
-            site_name,
+            &ctx,
             email_to_show,
             Some(&form.message),
             errors.get(FIELD_EMAIL).map(String::as_str),

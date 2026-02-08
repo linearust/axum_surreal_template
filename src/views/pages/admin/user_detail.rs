@@ -1,18 +1,15 @@
 use crate::{
-    auth::CurrentUser,
     constants::css,
-    session::FlashMessage,
     views::helpers,
-    models::admin::{OrderListItem, PaginatedResult, UserListItem},
+    models::admin::{OrderListItem, UserListItem},
+    models::pagination::PaginatedResult,
     paths,
-    views::{components::admin::{info_field, info_field_mono, order_row, pagination}, layout::base::base_layout},
+    views::{components::admin::{info_field, info_field_mono, order_row, pagination}, context::ViewContext, layout::base::base_layout},
 };
 use maud::{html, Markup};
 
 pub fn user_detail(
-    current_user: &CurrentUser,
-    flash: Option<&FlashMessage>,
-    site_name: &str,
+    ctx: &ViewContext,
     user: UserListItem,
     paginated_orders: PaginatedResult<OrderListItem>,
 ) -> Markup {
@@ -34,14 +31,7 @@ pub fn user_detail(
         }
     };
 
-    base_layout(
-        current_user,
-        flash,
-        site_name,
-        "User Details",
-        &format!("Details for {}", user.email),
-        content,
-    )
+    base_layout(ctx, "User Details", &format!("Details for {}", user.email), content)
 }
 
 

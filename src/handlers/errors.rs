@@ -4,7 +4,7 @@ use axum::{
 };
 use thiserror::Error;
 
-use crate::{auth::CurrentUser, constants::error_pages, data::errors::DataError, views::pages};
+use crate::{auth::CurrentUser, constants::error_pages, data::errors::DataError, views::{context::ViewContext, pages}};
 
 pub type HandlerResult<T = Response> = Result<T, HandlerError>;
 
@@ -38,6 +38,11 @@ impl IntoResponse for HandlerError {
             }
         };
 
-        (status, pages::server_error(&CurrentUser::Guest, None, error_pages::FALLBACK_SITE_NAME, message)).into_response()
+        let ctx = ViewContext {
+            current_user: &CurrentUser::Guest,
+            flash: None,
+            site_name: error_pages::FALLBACK_SITE_NAME,
+        };
+        (status, pages::server_error(&ctx, message)).into_response()
     }
 }

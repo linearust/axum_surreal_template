@@ -1,16 +1,12 @@
 use crate::{
-    auth::CurrentUser,
-    session::FlashMessage,
     models::sign_in::FIELD_EMAIL,
     paths,
-    views::{components::form, layout::base::base_layout},
+    views::{components::form, context::ViewContext, layout::base::base_layout},
 };
 use maud::{html, Markup};
 
 pub fn sign_in(
-    current_user: &CurrentUser,
-    flash: Option<&FlashMessage>,
-    site_name: &str,
+    ctx: &ViewContext,
     email_value: Option<&str>,
     email_error: Option<&str>,
 ) -> Markup {
@@ -25,5 +21,5 @@ pub fn sign_in(
         }
     };
 
-    base_layout(current_user, flash, site_name, "Sign In", "Sign in", content)
+    base_layout(ctx, "Sign In", "Sign in", content)
 }

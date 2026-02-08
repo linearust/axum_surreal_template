@@ -4,7 +4,7 @@ use axum::{
     http::request::Parts,
 };
 
-use crate::{auth::CurrentUser, config::AppConfig, models::UserId, session::FlashMessage};
+use crate::{auth::CurrentUser, config::AppConfig, models::UserId, session::FlashMessage, views::context::ViewContext};
 
 pub struct PageContext {
     pub config: AppConfig,
@@ -13,12 +13,12 @@ pub struct PageContext {
 }
 
 impl PageContext {
-    pub fn site_name(&self) -> &str {
-        self.config.site_name()
-    }
-
-    pub fn flash_ref(&self) -> Option<&FlashMessage> {
-        self.flash.as_ref()
+    pub fn view_context(&self) -> ViewContext<'_> {
+        ViewContext {
+            current_user: &self.current_user,
+            flash: self.flash.as_ref(),
+            site_name: self.config.site_name(),
+        }
     }
 
     /// Panics on Guest — only call in protected routes.

@@ -1,11 +1,7 @@
-use crate::{auth::CurrentUser, session::FlashMessage, paths, views::{components::form::submit_button, layout::base::base_layout}};
+use crate::{paths, views::{components::form::submit_button, context::ViewContext, layout::base::base_layout}};
 use maud::{Markup, html};
 
-pub fn text_analyzer(
-    current_user: &CurrentUser,
-    flash: Option<&FlashMessage>,
-    site_name: &str,
-) -> Markup {
+pub fn text_analyzer(ctx: &ViewContext) -> Markup {
     let content = html! {
         div class="max-w-lg mx-auto" {
             h1 class="text-xl mb-3" { "Text Analyzer" }
@@ -29,5 +25,5 @@ pub fn text_analyzer(
         }
     };
 
-    base_layout(current_user, flash, site_name, "Text Analyzer", "Upload files for text analysis", content)
+    base_layout(ctx, "Text Analyzer", "Upload files for text analysis", content)
 }

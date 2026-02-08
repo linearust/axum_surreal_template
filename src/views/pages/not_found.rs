@@ -1,10 +1,10 @@
-use crate::{auth::CurrentUser, session::FlashMessage, views::layout::base::base_layout};
+use crate::views::{context::ViewContext, layout::base::base_layout};
 use maud::{Markup, html};
 
-pub fn not_found(current_user: &CurrentUser, flash: Option<&FlashMessage>, site_name: &str) -> Markup {
+pub fn not_found(ctx: &ViewContext) -> Markup {
     let content = html! {
         h1 class="text-6xl" { "404" }
     };
 
-    base_layout(current_user, flash, site_name, "Page Not Found", "Page not found", content)
+    base_layout(ctx, "Page Not Found", "Page not found", content)
 }

@@ -17,10 +17,5 @@ pub async fn get_admin_users(
 
     let paginated = admin::get_users_paginated(page, ITEMS_PER_PAGE).await?;
 
-    Ok(admin_views::users(
-        &ctx.current_user,
-        ctx.flash_ref(),
-        ctx.site_name(),
-        paginated,
-    ))
+    Ok(admin_views::users(&ctx.view_context(), paginated))
 }

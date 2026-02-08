@@ -22,5 +22,5 @@ pub async fn get_payment_confirmation(
         return Err(DataError::Unauthorized(errors::PAYMENT_NOT_COMPLETED).into());
     }
 
-    Ok(pages::payment_confirmation(&ctx.current_user, ctx.flash_ref(), ctx.site_name(), &order))
+    Ok(pages::payment_confirmation(&ctx.view_context(), &order))
 }

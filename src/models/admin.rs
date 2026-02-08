@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::models::{order::PaymentStatus, OrderId, OrderNumber, UserId};
 
-pub use crate::models::pagination::PaginatedResult;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AdminStats {
     pub total_users: i64,

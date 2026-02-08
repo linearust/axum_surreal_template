@@ -1,12 +1,7 @@
-use crate::{auth::CurrentUser, session::FlashMessage, models::order::Order, paths, views::layout::base::base_layout};
+use crate::{models::order::Order, paths, views::{context::ViewContext, layout::base::base_layout}};
 use maud::{Markup, html};
 
-pub fn payment_confirmation(
-    current_user: &CurrentUser,
-    flash: Option<&FlashMessage>,
-    site_name: &str,
-    order: &Order,
-) -> Markup {
+pub fn payment_confirmation(ctx: &ViewContext, order: &Order) -> Markup {
     let word_count = order.text_content.split_whitespace().count();
 
     let content = html! {
@@ -35,5 +30,5 @@ pub fn payment_confirmation(
         }
     };
 
-    base_layout(current_user, flash, site_name, "Payment Confirmation", "Text analysis results", content)
+    base_layout(ctx, "Payment Confirmation", "Text analysis results", content)
 }

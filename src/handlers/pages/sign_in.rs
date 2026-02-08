@@ -6,5 +6,5 @@ use crate::{
 };
 
 pub async fn get_sign_in(ctx: PageContext) -> Result<Markup, HandlerError> {
-    Ok(pages::sign_in(&ctx.current_user, ctx.flash_ref(), ctx.site_name(), None, None))
+    Ok(pages::sign_in(&ctx.view_context(), None, None))
 }

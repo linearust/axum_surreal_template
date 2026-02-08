@@ -11,5 +11,5 @@ pub async fn get_todos(ctx: PageContext) -> Result<Markup, HandlerError> {
 
     let todos = queries::todo::get_todos_for_user(user_id).await?;
 
-    Ok(pages::todos(&ctx.current_user, ctx.flash_ref(), ctx.site_name(), todos, None, None))
+    Ok(pages::todos(&ctx.view_context(), todos, None, None))
 }

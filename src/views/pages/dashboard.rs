@@ -1,18 +1,14 @@
 use crate::{
-    auth::CurrentUser,
     constants::css,
-    session::FlashMessage,
     views::helpers,
     models::order::OrderSummary,
     paths,
-    views::layout::base::base_layout,
+    views::{context::ViewContext, layout::base::base_layout},
 };
 use maud::{html, Markup};
 
 pub fn dashboard(
-    current_user: &CurrentUser,
-    flash: Option<&FlashMessage>,
-    site_name: &str,
+    ctx: &ViewContext,
     recent_orders: Vec<OrderSummary>,
 ) -> Markup {
     let content = html! {
@@ -43,7 +39,7 @@ pub fn dashboard(
         }
     };
 
-    base_layout(current_user, flash, site_name, "Orders", "Your order history", content)
+    base_layout(ctx, "Orders", "Your order history", content)
 }
 
 fn order_row(order: &OrderSummary) -> Markup {

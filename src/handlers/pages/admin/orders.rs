@@ -26,11 +26,5 @@ pub async fn get_admin_orders(
 
     let paginated = admin::get_orders_paginated(status_filter, page, ITEMS_PER_PAGE).await?;
 
-    Ok(admin_views::orders(
-        &ctx.current_user,
-        ctx.flash_ref(),
-        ctx.site_name(),
-        paginated,
-        status_filter,
-    ))
+    Ok(admin_views::orders(&ctx.view_context(), paginated, status_filter))
 }

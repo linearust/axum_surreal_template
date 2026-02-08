@@ -1,20 +1,14 @@
 use crate::{
-    auth::CurrentUser,
     constants::css,
-    session::FlashMessage,
     views::helpers,
-    models::admin::{PaginatedResult, UserListItem},
+    models::admin::UserListItem,
+    models::pagination::PaginatedResult,
     paths,
-    views::{components::admin::pagination, layout::base::base_layout},
+    views::{components::admin::pagination, context::ViewContext, layout::base::base_layout},
 };
 use maud::{html, Markup};
 
-pub fn users(
-    current_user: &CurrentUser,
-    flash: Option<&FlashMessage>,
-    site_name: &str,
-    paginated: PaginatedResult<UserListItem>,
-) -> Markup {
+pub fn users(ctx: &ViewContext, paginated: PaginatedResult<UserListItem>) -> Markup {
     let content = html! {
         div class="max-w-6xl mx-auto" {
             h1 class="text-xl mb-6" { "Users" }
@@ -51,7 +45,7 @@ pub fn users(
         }
     };
 
-    base_layout(current_user, flash, site_name, "Users", "Browse all users", content)
+    base_layout(ctx, "Users", "Browse all users", content)
 }
 
 fn user_row(user: &UserListItem) -> Markup {
@@ -71,7 +65,7 @@ fn user_row(user: &UserListItem) -> Markup {
             td class="py-2 px-2 text-center" { (user.order_count) }
             td class="py-2 px-2 text-right" { "₩" (helpers::format_price(user.total_spent)) }
             td class="py-2 px-2 text-center" {
-                a href=(paths::with_param(paths::pages::admin::USER_DETAIL, "user_id", &user.id))
+                a href=(paths::helpers::user_detail_path(&user.id))
                     class=(css::LINK_SM)
                 {
                     "View"

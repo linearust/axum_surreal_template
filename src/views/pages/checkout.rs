@@ -1,12 +1,10 @@
 use maud::{html, Markup, PreEscaped};
 
 use crate::{
-    auth::CurrentUser,
     constants::{cdn, payment},
     models::order::Order,
     paths,
-    session::FlashMessage,
-    views::{helpers::format_price, layout::base},
+    views::{context::ViewContext, helpers::format_price, layout::base},
 };
 
 fn toss_payment_script(client_key: &str, order: &Order, success_url: &str, fail_url: &str) -> Markup {
@@ -56,13 +54,11 @@ fn toss_payment_script(client_key: &str, order: &Order, success_url: &str, fail_
 }
 
 pub fn checkout(
-    current_user: &CurrentUser,
-    flash: Option<&FlashMessage>,
-    site_name: &str,
+    ctx: &ViewContext,
     order: &Order,
     client_key: &str,
 ) -> Markup {
-    let success_url = "/actions/payment/verify".to_string();
+    let success_url = paths::actions::PAYMENT_VERIFY.to_string();
     let fail_url = paths::helpers::quote_path(&order.id);
 
     let content = html! {
@@ -101,5 +97,5 @@ pub fn checkout(
         (toss_payment_script(client_key, order, &success_url, &fail_url))
     };
 
-    base::base_layout(current_user, flash, site_name, "Checkout", "Complete your payment", content)
+    base::base_layout(ctx, "Checkout", "Complete your payment", content)
 }

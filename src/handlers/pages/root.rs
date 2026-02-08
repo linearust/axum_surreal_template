@@ -14,5 +14,5 @@ pub async fn get_root(ctx: PageContext) -> Result<Markup, HandlerError> {
         crate::auth::CurrentUser::Guest => None,
     };
 
-    Ok(pages::root(&ctx.current_user, ctx.flash_ref(), ctx.site_name(), user_email.as_deref(), None, None, None))
+    Ok(pages::root(&ctx.view_context(), user_email.as_deref(), None, None, None))
 }

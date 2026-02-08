@@ -1,6 +1,7 @@
 //! Maud templates: layout, components, pages.
 
 pub mod components;
+pub mod context;
 pub mod helpers;
 pub mod layout;
 pub mod pages;

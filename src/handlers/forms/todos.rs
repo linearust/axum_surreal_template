@@ -13,10 +13,10 @@ use crate::{
     handlers::errors::HandlerResult,
     models::{todo::{CreateTodoForm, FIELD_TASK}, UserId},
     paths::pages,
-    views::pages as view,
+    views::{context::ViewContext, pages as view},
 };
 
-use super::parse_validation_errors;
+use crate::handlers::shared::parse_validation_errors;
 
 pub async fn post_forms_todos(
     State(config): State<AppConfig>,
@@ -44,13 +44,12 @@ async fn render_validation_errors(
     errors: HashMap<String, String>,
 ) -> HandlerResult {
     let todos = queries::todo::get_todos_for_user(user_id).await?;
+    let ctx = ViewContext { current_user, flash: None, site_name };
 
     Ok((
         StatusCode::BAD_REQUEST,
         view::todos(
-            current_user,
-            None,
-            site_name,
+            &ctx,
             todos,
             Some(&form.task),
             errors.get(FIELD_TASK).map(String::as_str),

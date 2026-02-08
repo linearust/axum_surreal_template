@@ -14,10 +14,5 @@ pub async fn get_dashboard(ctx: PageContext) -> Result<Markup, HandlerError> {
         queries::order::get_orders_for_user(user_id, constants::dashboard::RECENT_ORDERS_LIMIT)
             .await?;
 
-    Ok(pages::dashboard(
-        &ctx.current_user,
-        ctx.flash_ref(),
-        ctx.site_name(),
-        recent_orders,
-    ))
+    Ok(pages::dashboard(&ctx.view_context(), recent_orders))
 }

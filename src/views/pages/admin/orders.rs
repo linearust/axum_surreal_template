@@ -1,17 +1,14 @@
 use crate::{
-    auth::CurrentUser,
-    session::FlashMessage,
-    models::admin::{OrderListItem, PaginatedResult},
+    models::admin::OrderListItem,
+    models::pagination::PaginatedResult,
     models::order::PaymentStatus,
     paths,
-    views::{components::admin::{order_row, pagination}, layout::base::base_layout},
+    views::{components::admin::{order_row, pagination}, context::ViewContext, layout::base::base_layout},
 };
 use maud::{html, Markup};
 
 pub fn orders(
-    current_user: &CurrentUser,
-    flash: Option<&FlashMessage>,
-    site_name: &str,
+    ctx: &ViewContext,
     paginated: PaginatedResult<OrderListItem>,
     filter: Option<PaymentStatus>,
 ) -> Markup {
@@ -58,7 +55,7 @@ pub fn orders(
         }
     };
 
-    base_layout(current_user, flash, site_name, "Orders", "Browse all orders", content)
+    base_layout(ctx, "Orders", "Browse all orders", content)
 }
 
 fn filter_tab(label: &str, href: &str, is_active: bool) -> Markup {

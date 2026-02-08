@@ -18,9 +18,7 @@ pub async fn get_checkout(
     let order = queries::order::get_order_for_user(&order_id, user_id).await?;
 
     Ok(pages::checkout(
-        &ctx.current_user,
-        ctx.flash_ref(),
-        ctx.site_name(),
+        &ctx.view_context(),
         &order,
         ctx.config.payment().toss_client_key(),
     ))

@@ -1,20 +1,13 @@
 use crate::{
-    auth::CurrentUser,
     constants::css,
-    session::FlashMessage,
     views::helpers,
     models::admin::OrderDetail,
     paths,
-    views::{components::admin::{info_field, info_field_mono}, layout::base::base_layout},
+    views::{components::admin::{info_field, info_field_mono}, context::ViewContext, layout::base::base_layout},
 };
 use maud::{html, Markup};
 
-pub fn order_detail(
-    current_user: &CurrentUser,
-    flash: Option<&FlashMessage>,
-    site_name: &str,
-    order: OrderDetail,
-) -> Markup {
+pub fn order_detail(ctx: &ViewContext, order: OrderDetail) -> Markup {
     let content = html! {
         div class="max-w-6xl mx-auto" {
             div class="mb-4" {
@@ -83,12 +76,5 @@ pub fn order_detail(
         }
     };
 
-    base_layout(
-        current_user,
-        flash,
-        site_name,
-        "Order Details",
-        &format!("Details for order {}", order.order_number),
-        content,
-    )
+    base_layout(ctx, "Order Details", &format!("Details for order {}", order.order_number), content)
 }

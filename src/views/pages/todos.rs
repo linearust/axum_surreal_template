@@ -1,16 +1,12 @@
 use crate::{
-    auth::CurrentUser,
-    session::FlashMessage,
     models::todo::{FIELD_TASK, Todo},
     paths,
-    views::{components::form, layout::base::base_layout},
+    views::{components::form, context::ViewContext, layout::base::base_layout},
 };
 use maud::{html, Markup};
 
 pub fn todos(
-    current_user: &CurrentUser,
-    flash: Option<&FlashMessage>,
-    site_name: &str,
+    ctx: &ViewContext,
     todos: Vec<Todo>,
     task_value: Option<&str>,
     task_error: Option<&str>,
@@ -36,7 +32,7 @@ pub fn todos(
         }
     };
 
-    base_layout(current_user, flash, site_name, "Todos", "Manage your todos", content)
+    base_layout(ctx, "Todos", "Manage your todos", content)
 }
 
 pub fn todo_item(todo: &Todo) -> Markup {

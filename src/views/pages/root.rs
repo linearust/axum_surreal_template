@@ -1,22 +1,18 @@
 use maud::{html, Markup};
 
 use crate::{
-    auth::CurrentUser,
     paths,
-    session::FlashMessage,
-    views::{components::form, layout::base::base_layout},
+    views::{components::form, context::ViewContext, layout::base::base_layout},
 };
 
 pub fn root(
-    current_user: &CurrentUser,
-    flash: Option<&FlashMessage>,
-    site_name: &str,
+    ctx: &ViewContext,
     email: Option<&str>,
     message: Option<&str>,
     email_error: Option<&str>,
     message_error: Option<&str>,
 ) -> Markup {
-    let is_readonly = current_user.is_authenticated();
+    let is_readonly = ctx.current_user.is_authenticated();
 
     let content = html! {
         div class="max-w-lg mx-auto" {
@@ -44,5 +40,5 @@ pub fn root(
         }
     };
 
-    base_layout(current_user, flash, site_name, "Home", "Home page", content)
+    base_layout(ctx, "Home", "Home page", content)
 }

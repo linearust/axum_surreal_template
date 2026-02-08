@@ -14,10 +14,10 @@ use crate::{
     models::sign_in::{FIELD_EMAIL, MagicLinkRequestForm},
     paths,
     session::FlashMessage,
-    views::pages,
+    views::{context::ViewContext, pages},
 };
 
-use super::parse_validation_errors;
+use crate::handlers::shared::parse_validation_errors;
 
 pub async fn post_forms_sign_in(
     State(config): State<AppConfig>,
@@ -51,12 +51,11 @@ fn render_validation_errors(
     form: &MagicLinkRequestForm,
     errors: HashMap<String, String>,
 ) -> Response {
+    let ctx = ViewContext { current_user, flash: None, site_name };
     (
         StatusCode::BAD_REQUEST,
         pages::sign_in(
-            current_user,
-            None,
-            site_name,
+            &ctx,
             Some(&form.email),
             errors.get(FIELD_EMAIL).map(String::as_str),
         ),

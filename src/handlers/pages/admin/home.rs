@@ -9,10 +9,5 @@ use crate::{
 pub async fn get_admin_home(ctx: PageContext) -> Result<Markup, HandlerError> {
     let stats = admin::get_admin_stats().await?;
 
-    Ok(admin_views::home(
-        &ctx.current_user,
-        ctx.flash_ref(),
-        ctx.site_name(),
-        stats,
-    ))
+    Ok(admin_views::home(&ctx.view_context(), stats))
 }
